@@ -6,6 +6,11 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -22,6 +27,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -55,7 +61,7 @@ import java.util.Locale;
 
 import it.sephiroth.android.library.tooltip.TooltipManager;
 
-public class CreaItinerarioFragment extends Fragment {
+public class CreaItinerarioFragment extends Fragment{
 
     private final String TAG = "CreaItinerarioLog";
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
@@ -65,10 +71,11 @@ public class CreaItinerarioFragment extends Fragment {
     private ArrayAdapter<String> foundPlaces;
     private ArrayList<Marker> addedPlaces = new ArrayList<Marker>();
     private static View view;
-    private Button btnConferma, btnAnnulla, btnFatto;
+    private Button btnConferma, btnAnnulla, btnFatto, btnGps;
     private boolean it=false;
     private Itinerario itinerario = new Itinerario();
     private boolean canModificaCancellazione = true;
+    private LocationManager mLocationManager;
 
     public CreaItinerarioFragment() {
         // Required empty public constructor
@@ -134,6 +141,43 @@ public class CreaItinerarioFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 showCreazioneItinerarioDialog();
+            }
+        });
+
+        btnGps = (Button)view.findViewById(R.id.btn_gps);
+
+        btnGps.setOnClickListener(new View.OnClickListener(){
+            public void onClick(View v) {
+                Location loc = getLastKnownLocation();
+
+                if(loc != null){
+                    MarkerOptions markerOptions = createMarkerFromLocation(loc);
+
+                    // Adding the position to the addedPlaces list, if not present
+                    if (placeAlreadyPresent(markerOptions.getPosition()))
+                        Toast.makeText(getActivity().getBaseContext(), "Tappa già presente", Toast.LENGTH_SHORT).show();
+                    else {
+                        // Placing a marker on the touched position
+                        Marker tmp = mMap.addMarker(markerOptions);
+
+                        addedPlaces.add(tmp);
+                        Log.d(TAG, "AddedPlaces " + addedPlaces.toString());
+                        // Locate the location
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(markerOptions.getPosition(), 15));
+
+                        canModificaCancellazione = false;
+                        closeKeyboard(getActivity(), etPlace.getWindowToken());
+                        btnConferma.setVisibility(View.VISIBLE);
+                        btnAnnulla.setVisibility(View.VISIBLE);
+                        btnFatto.setVisibility(View.INVISIBLE);
+
+                        Toast.makeText(getActivity().getBaseContext(), "Tappa in posizione attuale aggiunta", Toast.LENGTH_SHORT).show();
+
+                    }
+                }
+                else
+                    Toast.makeText(getActivity().getBaseContext(), "Impossibile trovare la posizione attuale", Toast.LENGTH_SHORT).show();
+
             }
         });
 
@@ -570,4 +614,43 @@ public class CreaItinerarioFragment extends Fragment {
         return markerOptions;
     }
 
+    private MarkerOptions createMarkerFromLocation(Location location) {
+        MarkerOptions markerOptions = new MarkerOptions();
+
+        // Getting latitude of the place
+        double lat = location.getLatitude();
+
+        // Getting longitude of the place
+        double lng = location.getLongitude();
+
+        // Getting name
+
+        LatLng latLng = new LatLng(lat, lng);
+
+        // Setting the position for the marker
+        markerOptions.position(latLng);
+
+        return markerOptions;
+    }
+
+    private Location getLastKnownLocation() {
+        mLocationManager = (LocationManager)getActivity().getApplicationContext().getSystemService(getActivity().LOCATION_SERVICE);
+        List<String> providers = mLocationManager.getProviders(true);
+        Location bestLocation = null;
+        for (String provider : providers) {
+            Location l = mLocationManager.getLastKnownLocation(provider);
+            if (l == null) {
+                continue;
+            }
+            // Aggiorna la bestLocation solo se la nuova è sia più accurata che più recente
+            if (bestLocation == null || (l.getAccuracy() < bestLocation.getAccuracy() && l.getTime() > bestLocation.getTime())) {
+                // Found best last known location: %s", l);
+                bestLocation = l;
+            }
+        }
+
+        Log.d(TAG, "Best location " + bestLocation);
+
+        return bestLocation;
+    }
 }

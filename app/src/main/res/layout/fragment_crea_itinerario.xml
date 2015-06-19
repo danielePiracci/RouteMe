@@ -8,7 +8,7 @@
 
     <AutoCompleteTextView
         android:id="@+id/et_place"
-        android:layout_width="fill_parent"
+        android:layout_width="330dp"
         android:layout_height="wrap_content"
         android:textColorHint="@color/lista"
         android:hint="Inserisci Tappa"
@@ -17,6 +17,19 @@
         android:backgroundTint="@color/lista"
         android:popupBackground="@color/sfondo"
         />
+
+    <Button
+        style="@style/MyButton"
+        android:background="@drawable/gpsnotclicked"
+        android:text=""
+        android:layout_marginTop="3dp"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="3dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:id="@+id/btn_gps"
+        android:visibility="visible"/>
+
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
