@@ -124,6 +124,8 @@ public class CreaItinerarioFragment extends Fragment{
         btnAnnulla.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                btnGps.setEnabled(true);
+                etPlace.setEnabled(true);
                 Marker toRemove = addedPlaces.remove(addedPlaces.size()-1);
                 toRemove.remove();
                 btnConferma.setVisibility(View.INVISIBLE);
@@ -170,6 +172,9 @@ public class CreaItinerarioFragment extends Fragment{
                         btnConferma.setVisibility(View.VISIBLE);
                         btnAnnulla.setVisibility(View.VISIBLE);
                         btnFatto.setVisibility(View.INVISIBLE);
+                        etPlace.setText("");
+                        btnGps.setEnabled(false);
+                        etPlace.setEnabled(false);
 
                         Toast.makeText(getActivity().getBaseContext(), "Tappa in posizione attuale aggiunta", Toast.LENGTH_SHORT).show();
 
@@ -221,6 +226,8 @@ public class CreaItinerarioFragment extends Fragment{
             @Override
             public void onItemClick(AdapterView<?> adapter, View view, int pos, long id) {
                 writing = false;
+                etPlace.setEnabled(false);
+                btnGps.setEnabled(false);
                 String location = (String) adapter.getItemAtPosition(pos);
                 startDownloadTask(location);
             }
@@ -474,6 +481,7 @@ public class CreaItinerarioFragment extends Fragment{
     public void onActivityResult(int requestCode, int resultCode, Intent i){
         if(resultCode==1) {
             // Inserimento tappa
+
             String nomeTappa = i.getStringExtra("nome_tappa");
             Tappa t = new Tappa(i.getStringExtra("nome_tappa"), i.getStringExtra("descrizione_tappa"), addedPlaces.get(addedPlaces.size() - 1));
             itinerario.aggiungiTappa(t);
@@ -481,6 +489,8 @@ public class CreaItinerarioFragment extends Fragment{
             btnConferma.setVisibility(View.INVISIBLE);
             btnAnnulla.setVisibility(View.INVISIBLE);
             etPlace.setText("");
+            etPlace.setEnabled(true);
+            btnGps.setEnabled(true);
             canModificaCancellazione = true;
             Toast.makeText(getActivity().getBaseContext(), "Aggiunta tappa " + nomeTappa, Toast.LENGTH_SHORT).show();
 
