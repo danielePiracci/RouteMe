@@ -2,7 +2,12 @@ package com.teamrouteme.routeme.fragment;
 
 import android.app.Dialog;
 import android.app.Fragment;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.LevelListDrawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -22,10 +27,16 @@ import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.parse.FindCallback;
+import com.parse.ParseException;
+import com.parse.ParseGeoPoint;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.teamrouteme.routeme.R;
 import com.teamrouteme.routeme.bean.Itinerario;
 import com.teamrouteme.routeme.bean.Tappa;
@@ -103,8 +114,10 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         ArrayList<Tappa> tappe = itinerario.getTappe();
         for(int i=0;i<tappe.size();i++) {
             MarkerOptions mO = createMarkerFromTappa(tappe.get(i));
-            Marker m = mMap.addMarker(mO);
+            mMap.addMarker(mO);
         }
+
+        getFermateBus(tappe,mMap);
 
         // Disegna il percorso tra i marker, se ce ne sono almeno 2
         for(int i=0;i<tappe.size()-1;i++){
@@ -145,7 +158,41 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
     }
 
 
+    public void getFermateBus(ArrayList<Tappa> tappe, final GoogleMap mMap){
 
+        ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea");
+
+        for(Tappa tappa : tappe){
+
+            ParseGeoPoint tappaLocation = (ParseGeoPoint) tappa.getCoordinate();
+            info_linea.whereWithinKilometers("geo_point",tappaLocation,20);
+            info_linea.findInBackground(new FindCallback<ParseObject>() {
+                public void done(List<ParseObject> objects, ParseException e) {
+
+                    MarkerOptions markerOptions;
+
+                    if (e == null) {
+                        for(ParseObject parseObject : objects){
+                            markerOptions = createMarkerBus(parseObject.getParseGeoPoint("geo_point"));
+
+
+
+                            markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_bus));
+
+                            mMap.addMarker(markerOptions);
+
+                        }
+
+                    } else {
+                        Log.e("Bus location",e.getMessage());
+                    }
+                }
+            });
+
+
+        }
+
+    }
 
 
     // Metodo per posizionare la mappa sulla posizione attuale, se possibile, altrimenti la posiziona sull'Italia
@@ -272,6 +319,43 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         markerOptions.title(name);
 
         // Setting the snippet for the marker
+        markerOptions.snippet(description);
+
+        return markerOptions;
+    }
+
+    // Da un oggetto geopoint (coordinate bus) crea e restituisce il marker da disegnare sulla mappa
+    private MarkerOptions createMarkerBus(ParseGeoPoint t) {
+        MarkerOptions markerOptions = new MarkerOptions();
+
+        // Getting latitude of the place
+        double lat = t.getLatitude();
+
+        // Getting longitude of the place
+        double lng = t.getLongitude();
+
+        // Getting name
+        //String name = t.getNome();
+
+        String name = "prova";
+
+        // Getting description
+        //String description = t.getDescrizione();
+
+        String description = "prova2";
+
+        LatLng latLng = new LatLng(lat, lng);
+
+        // Setting the position for the marker
+        markerOptions.position(latLng);
+
+        // Setting the title for the marker
+        //markerOptions.title(name);
+
+        markerOptions.title(name);
+
+        // Setting the snippet for the marker
+        //markerOptions.snippet(description);
         markerOptions.snippet(description);
 
         return markerOptions;

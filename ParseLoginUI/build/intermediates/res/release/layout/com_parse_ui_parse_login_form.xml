@@ -54,4 +54,4 @@
         android:layout_marginBottom="@dimen/com_parse_ui_small_vertical_spacing"
         android:text="@string/com_parse_ui_forgot_password_button_label" />
 </LinearLayout>
-<!-- From: file:/Users/massimo299/AndroidStudioProjects/RouteMe/ParseLoginUI/res/layout/com_parse_ui_parse_login_form.xml -->
+<!-- From: file:/Users/ginofarisano/Desktop/RouteGIS/RouteMe/ParseLoginUI/res/layout/com_parse_ui_parse_login_form.xml -->

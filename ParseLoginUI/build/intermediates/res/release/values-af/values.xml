@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- From: file:/Users/massimo299/AndroidStudioProjects/RouteMe/ParseLoginUI/build/intermediates/exploded-aar/com.facebook.android/facebook-android-sdk/4.0.1/res/values-af/values.xml -->
+    <!-- From: file:/Users/ginofarisano/Desktop/RouteGIS/RouteMe/ParseLoginUI/build/intermediates/exploded-aar/com.facebook.android/facebook-android-sdk/4.0.1/res/values-af/values.xml -->
     <eat-comment/>
     <string name="messenger_send_button_text">Stuur</string>
 </resources>
