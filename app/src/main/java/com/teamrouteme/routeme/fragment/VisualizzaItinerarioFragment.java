@@ -2,6 +2,8 @@ package com.teamrouteme.routeme.fragment;
 
 import android.app.Dialog;
 import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.ProgressDialog;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -72,6 +74,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
     private static View view;
     private Button btnIndietro;
     private boolean itinerariScaricati = false;
+    private ArrayList<Marker> markersBus = new ArrayList<Marker>();
 
     public VisualizzaItinerarioFragment(){
         // Required empty public constructor
@@ -167,6 +170,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
 
             ParseGeoPoint tappaLocation = (ParseGeoPoint) tappa.getCoordinate();
             info_linea.whereWithinKilometers("geo_point",tappaLocation,1);
+
             info_linea.findInBackground(new FindCallback<ParseObject>() {
                 public void done(List<ParseObject> objects, ParseException e) {
 
@@ -177,8 +181,25 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
                             //markerOptions = createMarkerBus(parseObject.getParseGeoPoint("geo_point"));
                             markerOptions = createMarkerBus(parseObject);
                             markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_bus));
-                            mMap.setInfoWindowAdapter(new CustomInfoView(getActivity().getLayoutInflater()));
-                            mMap.addMarker(markerOptions);
+                            Marker marker = mMap.addMarker(markerOptions);
+                            markersBus.add(marker);
+
+                            mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+
+                                @Override
+                                public void onMapLongClick(LatLng latLng) {
+                                    for (int i = 0; i <  markersBus.size(); i++) {
+                                        Marker marker = markersBus.get(i);
+                                        if (Math.abs(marker.getPosition().latitude - latLng.latitude) < 0.0009 && Math.abs(marker.getPosition().longitude - latLng.longitude) < 0.0009) {
+                                            showInformazioniBusDialog(i, marker.getTitle());
+                                            Log.d(TAG, "Trovato marker tappa " + marker.getTitle());
+                                            break;
+                                        }
+
+                                    }
+
+                                }
+                            });
                         }
 
                     } else {
@@ -186,8 +207,6 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
                     }
                 }
             });
-
-
         }
 
     }
@@ -331,11 +350,11 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         String name = t.getString("fermata");
 
         // Getting description
-        String description = "Orari: ";
+       /* String description = "Orari: ";
         String s = t.getString("orari");
         s = s.trim();
         s = s.replace(" ", "-");
-        description += s;
+        description += s;*/
 
         LatLng latLng = new LatLng(lat, lng);
 
@@ -346,7 +365,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         markerOptions.title(name);
 
         // Setting the snippet for the marker
-        markerOptions.snippet(description);
+        markerOptions.snippet("Tieni premuto per maggiori informazioni");
 
         return markerOptions;
     }
@@ -484,7 +503,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         String data = "";
         InputStream iStream = null;
         HttpURLConnection urlConnection = null;
-        try{
+        try {
             URL url = new URL(strUrl);
 
             // Creating an http connection to communicate with url
@@ -501,7 +520,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
             StringBuffer sb = new StringBuffer();
 
             String line = "";
-            while( ( line = br.readLine()) != null){
+            while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
 
@@ -509,12 +528,23 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
 
             br.close();
 
-        }catch(Exception e){
+        } catch (Exception e) {
             Log.d("Exception download url", e.toString());
-        }finally{
+        } finally {
             iStream.close();
             urlConnection.disconnect();
         }
         return data;
+    }
+
+    private void showInformazioniBusDialog(int markerPosition, String titleBus){
+        FragmentManager fm = getFragmentManager();
+        final InformazioniBusDialog informazioniBusDialog = new InformazioniBusDialog();
+        Bundle b = new Bundle();
+        b.putInt("markerPosition", markerPosition);
+        b.putString("fermata", titleBus);
+        informazioniBusDialog.setArguments(b);
+        informazioniBusDialog.show(fm, "fragment_informazionibus_dialog");
+        informazioniBusDialog.setTargetFragment(this, 3);
     }
 }

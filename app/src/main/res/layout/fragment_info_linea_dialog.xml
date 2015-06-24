@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#e0f2f1">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/linea"
+            android:text="nomelinea"
+            android:textSize="12pt"
+            android:textStyle="bold"
+            android:textColor="@color/testo"
+            android:layout_marginLeft="15dp"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:visibility="gone"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/ferialeTitle"
+                android:text="Feriale"
+                android:textSize="10pt"
+                android:textStyle="bold"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+
+            <TextView
+                android:id="@+id/andataFerialeTitle"
+                android:text="Andata"
+                android:textSize="8pt"
+                android:textStyle="bold"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/andataOrariFeriale"
+                android:text="Andata testo"
+                android:textSize="8pt"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/ritornoFerialeTitle"
+                android:text="Ritorno"
+                android:textSize="8pt"
+                android:textStyle="bold"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+
+            <TextView
+                android:id="@+id/ritornoFerialeOrari"
+                android:text="Ritorno testo"
+                android:textSize="8pt"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+
+            <TextView
+                android:id="@+id/festivoTitle"
+                android:text="Festivo"
+                android:textStyle="bold"
+                android:textSize="10pt"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+
+            <TextView
+                android:id="@+id/andataFestiviTitle"
+                android:text="Andata"
+                android:textStyle="bold"
+                android:textSize="8pt"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/andataOrariFestivi"
+                android:text="Andata festivi"
+                android:textSize="8pt"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/ritornoFestivoTitle"
+                android:text="Ritorno"
+                android:textSize="8pt"
+                android:textStyle="bold"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/ritornoOrariFestivo"
+                android:text="Ritorno festivo"
+                android:textSize="8pt"
+                android:textColor="@color/testo"
+                android:layout_marginLeft="15dp"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+        </LinearLayout>
+    </ScrollView>
+
+
+
+
+
+</LinearLayout>
