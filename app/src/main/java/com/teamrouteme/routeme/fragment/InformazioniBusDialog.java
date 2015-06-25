@@ -55,9 +55,8 @@ public class InformazioniBusDialog extends DialogFragment {
 
         connectionError = false;
         
-        fermatatw = (TextView)view.findViewById(R.id.fermata);
+        fermatatw = (TextView)view.findViewById(R.id.fermataInfo);
         fermatatw.setText(fermata);
-        fermatatw.setVisibility(View.VISIBLE);
 
         linee = (ListView)view.findViewById(R.id.listView_linee);
 
@@ -72,8 +71,7 @@ public class InformazioniBusDialog extends DialogFragment {
 
                 if (e == null) {
                     ArrayList<String> allLinee = new ArrayList<String>();
-                    TextView fermataTW = (TextView)view.findViewById(R.id.fermata);
-                    fermataTW.setVisibility(View.VISIBLE);
+                    fermatatw.setVisibility(View.VISIBLE);
                     for (ParseObject linea : list) {
                         allLinee.add(linea.getString("linea_bus"));
                     }

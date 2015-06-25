@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <TextView
-            android:id="@+id/fermata"
+            android:id="@+id/fermataInfo"
             android:text=""
             android:textSize="10pt"
             android:textColor="@color/testo"
