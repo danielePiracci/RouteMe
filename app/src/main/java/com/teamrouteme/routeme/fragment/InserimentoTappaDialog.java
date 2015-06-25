@@ -3,8 +3,11 @@ package com.teamrouteme.routeme.fragment;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,12 +41,15 @@ public class InserimentoTappaDialog extends DialogFragment {
         View view = inflater.inflate(R.layout.fragment_inserimento_tappa_dialog, container);
         getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         Bundle b = getArguments();
+
         if(b != null) {
             isModifica = true;
             nomeTappa = b.getString("nomeTappa");
             descrizioneTappa = b.getString("descrizioneTappa");
             markerPosition = b.getInt("markerPosition");
         }
+
+        Log.i("nometappa->",""+nomeTappa);
 
         nomeTappaEditText = (EditText) view.findViewById(R.id.editText_nome_tappa);
         descrizioneTappaEditText = (EditText) view.findViewById(R.id.editText_descrizione_tappa);

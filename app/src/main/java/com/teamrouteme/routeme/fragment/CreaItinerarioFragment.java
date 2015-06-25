@@ -5,6 +5,7 @@ import android.app.FragmentManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
@@ -13,7 +14,9 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -34,9 +37,16 @@ import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.parse.FindCallback;
+import com.parse.Parse;
+import com.parse.ParseException;
+import com.parse.ParseGeoPoint;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.parse.ParseUser;
 import com.teamrouteme.routeme.R;
 import com.teamrouteme.routeme.bean.Itinerario;
@@ -47,17 +57,27 @@ import com.teamrouteme.routeme.utility.ParseCall;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import it.sephiroth.android.library.tooltip.TooltipManager;
 
@@ -76,6 +96,12 @@ public class CreaItinerarioFragment extends Fragment{
     private Itinerario itinerario = new Itinerario();
     private boolean canModificaCancellazione = true;
     private LocationManager mLocationManager;
+    private Writer writer;
+    private File root;
+    private File outDir;
+    private File f = null;
+    private File outputFile = null;
+    private ArrayList<Marker> markersRecupero = new ArrayList<Marker>();
 
     public CreaItinerarioFragment() {
         // Required empty public constructor
@@ -84,6 +110,46 @@ public class CreaItinerarioFragment extends Fragment{
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        root = Environment.getExternalStorageDirectory();
+        outDir = new File(root.getAbsolutePath() + File.separator + "routeme");
+        if(!outDir.isDirectory()){
+            outDir.mkdir();
+        }
+
+        outputFile = new File(outDir,"tappe_tmp.txt");
+        if(outputFile!=null){
+            try {
+                Log.e("File", "sono nel file");
+                BufferedReader br = new BufferedReader(new FileReader(outputFile));
+                String line;
+
+                while((line = br.readLine()) != null){
+                    String [] infoTappa = line.split(";");
+                    MarkerOptions markerOptions = createMarkerRecupero(infoTappa);
+                    Marker marker = mMap.addMarker(markerOptions);
+                    markersRecupero.add(marker);
+
+                    /*
+                    Location loc = new Location("prova");
+                    LatLng latLng = new LatLng(Double.parseDouble(infoTappa[2]), Double.parseDouble(infoTappa[3]));
+                    MarkerOptions markerOptions = createMarkerFromLocation(loc);
+                    markerOptions.title(infoTappa[0]);
+                    markerOptions.snippet(infoTappa[1]);
+                    markerOptions.position(latLng);
+                    Marker tmp = mMap.addMarker(markerOptions);
+
+                    addedPlaces.add(tmp);
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(markerOptions.getPosition(), 15));
+                    */
+
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         if (view != null) {
             ViewGroup parent = (ViewGroup) view.getParent();
@@ -163,6 +229,7 @@ public class CreaItinerarioFragment extends Fragment{
                         Marker tmp = mMap.addMarker(markerOptions);
 
                         addedPlaces.add(tmp);
+
                         Log.d(TAG, "AddedPlaces " + addedPlaces.toString());
                         // Locate the location
                         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(markerOptions.getPosition(), 15));
@@ -246,6 +313,29 @@ public class CreaItinerarioFragment extends Fragment{
                     .show();
 
         return view;
+    }
+
+    private MarkerOptions createMarkerRecupero(String[] infoTappa) {
+        MarkerOptions markerOptions = new MarkerOptions();
+
+        // Getting latitude of the place
+        double lat = Double.parseDouble(infoTappa[2]);
+
+        // Getting longitude of the place
+        double lng = Double.parseDouble(infoTappa[3]);
+
+        // Getting name
+        LatLng latLng = new LatLng(lat, lng);
+        // Setting the position for the marker
+        markerOptions.position(latLng);
+
+        // Setting the title for the marker
+        markerOptions.title(infoTappa[0]);
+
+        // Setting the snippet for the marker
+        markerOptions.snippet(infoTappa[1]);
+
+        return markerOptions;
     }
 
     private void startDownloadTask(String location) {
@@ -485,7 +575,38 @@ public class CreaItinerarioFragment extends Fragment{
             String nomeTappa = i.getStringExtra("nome_tappa");
             Tappa t = new Tappa(i.getStringExtra("nome_tappa"), i.getStringExtra("descrizione_tappa"), addedPlaces.get(addedPlaces.size() - 1));
             itinerario.aggiungiTappa(t);
-            Log.d(TAG,"Itinerario contiene "+itinerario.getTappeSize()+" tappe");
+            
+
+            outputFile = new File(outDir,"tappe_tmp.txt");
+            if(!outputFile.exists()){
+                try {
+                    writer = new BufferedWriter(new FileWriter(outputFile));
+                    writer.write(t.getNome()+";"+t.getDescrizione()+";"+t.getMarker().getPosition().latitude+";"+t.getMarker().getPosition().longitude);
+                    writer.close();
+                    Log.e("Scrivi", "File scritto");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            else{
+                try {
+                    writer = new BufferedWriter(new FileWriter(outputFile,true));
+                    writer.write("\n"+t.getNome()+";"+t.getDescrizione()+";"+t.getMarker().getPosition().latitude+";"+t.getMarker().getPosition().longitude);
+                    writer.close();
+                    Log.e("Scrivi", "File appeso");
+                }catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+           /* localDb = new ParseObject("localdatastore");
+            localDb.put("nome_tappa",t.getNome());
+            localDb.put("descrizione_tappa",t.getDescrizione());
+            localDb.put("latitudine",t.getMarker().getPosition().latitude);
+            localDb.put("longitudine",t.getMarker().getPosition().longitude);
+            localDb.pinInBackground();*/
+
+            Log.d(TAG, "Itinerario contiene " + itinerario.getTappeSize() + " tappe");
             btnConferma.setVisibility(View.INVISIBLE);
             btnAnnulla.setVisibility(View.INVISIBLE);
             etPlace.setText("");
@@ -544,8 +665,9 @@ public class CreaItinerarioFragment extends Fragment{
             canModificaCancellazione = true;
             Toast.makeText(getActivity().getBaseContext(), "Modificata tappa " + nomeTappa, Toast.LENGTH_SHORT).show();
 
-            if (itinerario.getTappeSize() > 0)
+            if (itinerario.getTappeSize() > 0) {
                 btnFatto.setVisibility(View.VISIBLE);
+            }
         }
     }
 

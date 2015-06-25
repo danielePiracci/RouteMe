@@ -356,13 +356,6 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         // Getting name
         String name = t.getString("fermata");
 
-        // Getting description
-       /* String description = "Orari: ";
-        String s = t.getString("orari");
-        s = s.trim();
-        s = s.replace(" ", "-");
-        description += s;*/
-
         LatLng latLng = new LatLng(lat, lng);
 
         // Setting the position for the marker
