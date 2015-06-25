@@ -15,6 +15,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.InflateException;
@@ -22,6 +23,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -39,6 +41,7 @@ import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
+import com.parse.ParseUser;
 import com.teamrouteme.routeme.R;
 import com.teamrouteme.routeme.bean.Itinerario;
 import com.teamrouteme.routeme.bean.Tappa;
@@ -164,12 +167,18 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
 
     public void getFermateBus(ArrayList<Tappa> tappe, final GoogleMap mMap){
 
-        ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea");
+        recursiveGetFermate(tappe,0);
+    }
 
-        for(Tappa tappa : tappe){
+    private void recursiveGetFermate(final ArrayList<Tappa> tappe, final int index ){
 
-            ParseGeoPoint tappaLocation = (ParseGeoPoint) tappa.getCoordinate();
-            info_linea.whereWithinKilometers("geo_point",tappaLocation,1);
+        if(tappe.size()==index){
+
+        } else {
+            ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea");
+
+            ParseGeoPoint tappaLocation = tappe.get(index).getCoordinate();
+            info_linea.whereWithinKilometers("geo_point", tappaLocation, 0.5);
 
             info_linea.findInBackground(new FindCallback<ParseObject>() {
                 public void done(List<ParseObject> objects, ParseException e) {
@@ -178,7 +187,6 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
 
                     if (e == null) {
                         for(ParseObject parseObject : objects){
-                            //markerOptions = createMarkerBus(parseObject.getParseGeoPoint("geo_point"));
                             markerOptions = createMarkerBus(parseObject);
                             markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_bus));
                             Marker marker = mMap.addMarker(markerOptions);
@@ -201,6 +209,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
                                 }
                             });
                         }
+                        recursiveGetFermate(tappe,index+1);
 
                     } else {
                         Log.e("Bus location",e.getMessage());
@@ -208,9 +217,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
                 }
             });
         }
-
     }
-
 
     // Metodo per posizionare la mappa sulla posizione attuale, se possibile, altrimenti la posiziona sull'Italia
     private void setUpMapOnLastKnownLocation(boolean locationUpdatesRequested){
