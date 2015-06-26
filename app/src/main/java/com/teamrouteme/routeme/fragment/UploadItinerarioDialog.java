@@ -4,6 +4,7 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -28,6 +29,7 @@ import com.teamrouteme.routeme.utility.MyOnOpenTagsListener;
 import com.teamrouteme.routeme.utility.ClipRevealFrame;
 import com.yahoo.mobile.client.android.util.RangeSeekBar;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -145,6 +147,17 @@ public class UploadItinerarioDialog extends DialogFragment{
             public void onClick(View v) {
                 String result = checkFields();
                 if (result == null) {
+
+                    File root = Environment.getExternalStorageDirectory();
+                    File outDir = new File(root.getAbsolutePath() + File.separator + "routeme");
+
+
+                    File outputFile = new File(outDir,"tappe_tmp.txt");
+                    if(outputFile!=null){
+                        if(outputFile.exists())
+                            outputFile.delete();
+                    }
+
                     Intent i = new Intent();
                     i.putExtra("citta_itinerario", cittaItinerarioEditText.getText().toString());;
                     i.putExtra("tags_itinerario", listTags.toArray(new String [listTags.size()]));

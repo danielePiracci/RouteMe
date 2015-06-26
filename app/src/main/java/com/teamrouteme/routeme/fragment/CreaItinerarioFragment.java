@@ -1,9 +1,11 @@
 package com.teamrouteme.routeme.fragment;
 
+import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -102,6 +104,9 @@ public class CreaItinerarioFragment extends Fragment{
     private File f = null;
     private File outputFile = null;
     private ArrayList<Marker> markersRecupero = new ArrayList<Marker>();
+    private boolean flagPrimaVolta = false;
+
+
 
     public CreaItinerarioFragment() {
         // Required empty public constructor
@@ -111,45 +116,7 @@ public class CreaItinerarioFragment extends Fragment{
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        root = Environment.getExternalStorageDirectory();
-        outDir = new File(root.getAbsolutePath() + File.separator + "routeme");
-        if(!outDir.isDirectory()){
-            outDir.mkdir();
-        }
 
-        outputFile = new File(outDir,"tappe_tmp.txt");
-        if(outputFile!=null){
-            try {
-                Log.e("File", "sono nel file");
-                BufferedReader br = new BufferedReader(new FileReader(outputFile));
-                String line;
-
-                while((line = br.readLine()) != null){
-                    String [] infoTappa = line.split(";");
-                    MarkerOptions markerOptions = createMarkerRecupero(infoTappa);
-                    Marker marker = mMap.addMarker(markerOptions);
-                    markersRecupero.add(marker);
-
-                    /*
-                    Location loc = new Location("prova");
-                    LatLng latLng = new LatLng(Double.parseDouble(infoTappa[2]), Double.parseDouble(infoTappa[3]));
-                    MarkerOptions markerOptions = createMarkerFromLocation(loc);
-                    markerOptions.title(infoTappa[0]);
-                    markerOptions.snippet(infoTappa[1]);
-                    markerOptions.position(latLng);
-                    Marker tmp = mMap.addMarker(markerOptions);
-
-                    addedPlaces.add(tmp);
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(markerOptions.getPosition(), 15));
-                    */
-
-                }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
 
         if (view != null) {
             ViewGroup parent = (ViewGroup) view.getParent();
@@ -300,8 +267,16 @@ public class CreaItinerarioFragment extends Fragment{
             }
         });
 
+        root = Environment.getExternalStorageDirectory();
+        outDir = new File(root.getAbsolutePath() + File.separator + "routeme");
+        if(!outDir.isDirectory()){
+            outDir.mkdir();
+        }
 
-        if(addedPlaces.size()==0)
+        outputFile = new File(outDir,"tappe_tmp.txt");
+
+
+        if(addedPlaces.size()==0 && !outputFile.exists())
             TooltipManager.getInstance(getActivity())
                     .create(R.id.layout_fragment_crea_itinerario)
                     .anchor(etPlace, TooltipManager.Gravity.BOTTOM)
@@ -311,6 +286,100 @@ public class CreaItinerarioFragment extends Fragment{
                     .maxWidth(500)
                     .withStyleId(R.style.ToolTipLayoutCustomStyle)
                     .show();
+
+        root = Environment.getExternalStorageDirectory();
+        outDir = new File(root.getAbsolutePath() + File.separator + "routeme");
+        if(!outDir.isDirectory()){
+            outDir.mkdir();
+        }
+
+        outputFile = new File(outDir,"tappe_tmp.txt");
+        if(outputFile!=null && outputFile.exists()){
+
+
+            Log.e("File", "sono nel file");
+
+            btnFatto.setVisibility(View.VISIBLE);
+
+            boolean flag = false;
+
+
+            AlertDialog.Builder miaAlert = new AlertDialog.Builder(getActivity());
+            miaAlert.setTitle("Attenzione!");
+            miaAlert.setMessage("Vuoi continuare da dove hai lasciato?");
+
+            miaAlert.setPositiveButton("Si", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+
+                    flagPrimaVolta = true;
+
+                    String line;
+                    BufferedReader br = null;
+                    try {
+                        br = new BufferedReader(new FileReader(outputFile));
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    try {
+                        while((line = br.readLine()) != null){
+
+
+                            String [] infoTappa = line.split(";");
+                            MarkerOptions markerOptions = createMarkerRecupero(infoTappa);
+                            setUpMapOnItaly();
+                            Marker marker = mMap.addMarker(markerOptions);
+                            markersRecupero.add(marker);
+                            Tappa t = new Tappa(infoTappa[0], infoTappa[1], marker);
+                            itinerario.aggiungiTappa(t);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            });
+
+            miaAlert.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+
+                    btnFatto.setVisibility(View.INVISIBLE);
+
+                    if(outputFile!=null){
+                        if(outputFile.exists())
+                            outputFile.delete();
+                    }
+                }
+            });
+
+            AlertDialog alert = miaAlert.create();
+
+            alert.show();
+
+            flag = true;
+
+
+
+
+
+
+                    /*
+                    Location loc = new Location("prova");
+                    LatLng latLng = new LatLng(Double.parseDouble(infoTappa[2]), Double.parseDouble(infoTappa[3]));
+                    MarkerOptions markerOptions = createMarkerFromLocation(loc);
+                    markerOptions.title(infoTappa[0]);
+                    markerOptions.snippet(infoTappa[1]);
+                    markerOptions.position(latLng);
+                    Marker tmp = mMap.addMarker(markerOptions);
+
+                    addedPlaces.add(tmp);
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(markerOptions.getPosition(), 15));
+                    */
+
+        }
+
+
+
 
         return view;
     }
@@ -575,7 +644,7 @@ public class CreaItinerarioFragment extends Fragment{
             String nomeTappa = i.getStringExtra("nome_tappa");
             Tappa t = new Tappa(i.getStringExtra("nome_tappa"), i.getStringExtra("descrizione_tappa"), addedPlaces.get(addedPlaces.size() - 1));
             itinerario.aggiungiTappa(t);
-            
+
 
             outputFile = new File(outDir,"tappe_tmp.txt");
             if(!outputFile.exists()){
