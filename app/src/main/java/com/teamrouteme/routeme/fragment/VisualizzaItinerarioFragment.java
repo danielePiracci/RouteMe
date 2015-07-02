@@ -78,6 +78,9 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
     private Button btnIndietro;
     private boolean itinerariScaricati = false;
     private ArrayList<Marker> markersBus = new ArrayList<Marker>();
+    private ArrayList<Marker> markersTappe = new ArrayList<Marker>();
+    private ArrayList<HashMap<String,String>> ALTappaCurrent;
+    private ArrayList<HashMap<String,String>> ALTappaNext;
 
     public VisualizzaItinerarioFragment(){
         // Required empty public constructor
@@ -121,7 +124,8 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         ArrayList<Tappa> tappe = itinerario.getTappe();
         for(int i=0;i<tappe.size();i++) {
             MarkerOptions mO = createMarkerFromTappa(tappe.get(i));
-            mMap.addMarker(mO);
+            Marker m = mMap.addMarker(mO);
+            markersTappe.add(m);
         }
 
         getFermateBus(tappe,mMap);
@@ -192,24 +196,37 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
                             Marker marker = mMap.addMarker(markerOptions);
                             markersBus.add(marker);
 
-                            mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
 
-                                @Override
-                                public void onMapLongClick(LatLng latLng) {
-                                    for (int i = 0; i <  markersBus.size(); i++) {
-                                        Marker marker = markersBus.get(i);
-                                        if (Math.abs(marker.getPosition().latitude - latLng.latitude) < 0.0009 && Math.abs(marker.getPosition().longitude - latLng.longitude) < 0.0009) {
-                                            showInformazioniBusDialog(i, marker.getTitle());
+                        }
+                        recursiveGetFermate(tappe,index+1);
+                        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+
+                            @Override
+                            public void onMapLongClick(LatLng latLng) {
+                                for (int i = 0; i < markersBus.size(); i++) {
+                                    Marker marker = markersBus.get(i);
+                                    if (Math.abs(marker.getPosition().latitude - latLng.latitude) < 0.0009 && Math.abs(marker.getPosition().longitude - latLng.longitude) < 0.0009) {
+                                        showInformazioniBusDialog(i, marker.getTitle());
+                                        Log.d(TAG, "Trovato marker tappa " + marker.getTitle());
+                                        break;
+                                    }
+                                }
+
+
+                                //long press per le fermate vicine
+                                for (int i = 0; i < markersTappe.size(); i++) {
+                                    Marker marker = markersTappe.get(i);
+                                    if (Math.abs(marker.getPosition().latitude - latLng.latitude) < 0.0009 && Math.abs(marker.getPosition().longitude - latLng.longitude) < 0.0009) {
+                                        if(i!=markersTappe.size()) {
+                                            showInformazioniTappeBusDialog(markersTappe.get(i), markersTappe.get(i + 1));
                                             Log.d(TAG, "Trovato marker tappa " + marker.getTitle());
                                             break;
                                         }
-
                                     }
-
                                 }
-                            });
-                        }
-                        recursiveGetFermate(tappe,index+1);
+
+                            }
+                        });
 
                     } else {
                         Log.e("Bus location",e.getMessage());
@@ -547,4 +564,61 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         informazioniBusDialog.show(fm, "fragment_informazionibus_dialog");
         informazioniBusDialog.setTargetFragment(this, 3);
     }
+
+    private void showInformazioniTappeBusDialog(Marker currentMarker, Marker nextMarker){
+
+        ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea");
+        //fermate intorno a currentMarker
+        ParseGeoPoint currentGeoPoint = new ParseGeoPoint();
+        currentGeoPoint.setLatitude(currentMarker.getPosition().latitude);
+        currentGeoPoint.setLongitude(currentMarker.getPosition().longitude);
+        info_linea.whereWithinKilometers("geo_point", currentGeoPoint, 1);
+        info_linea.findInBackground(new FindCallback<ParseObject>() {
+            public void done(List<ParseObject> objects, ParseException e) {
+                ALTappaCurrent = new ArrayList<HashMap<String, String>>();
+                if (e == null) {
+                    for (ParseObject parseObject : objects) {
+                        String linea = parseObject.getString("linea_bus");
+                        String fermata = parseObject.getString("fermata");
+                        HashMap<String,String> hmTappa = new HashMap<String, String>();
+                        hmTappa.put(linea,fermata);
+                        ALTappaCurrent.add(hmTappa);
+                    }
+                } else {
+                    Log.e("Bus location", e.getMessage());
+                }
+            }
+        });
+
+
+        //fermate intorno a nextMarker
+        ParseGeoPoint nextGeoPoint = new ParseGeoPoint();
+        nextGeoPoint.setLatitude(nextMarker.getPosition().latitude);
+        nextGeoPoint.setLongitude(nextMarker.getPosition().longitude);
+        info_linea.whereWithinKilometers("geo_point", currentGeoPoint, 1);
+        info_linea.findInBackground(new FindCallback<ParseObject>() {
+            public void done(List<ParseObject> objects, ParseException e) {
+                ALTappaNext = new ArrayList<HashMap<String, String>>();
+                if (e == null) {
+                    for (ParseObject parseObject : objects) {
+                        String linea = parseObject.getString("linea_bus");
+                        String fermata = parseObject.getString("fermata");
+                        HashMap<String,String> hmTappa = new HashMap<String, String>();
+                        hmTappa.put(linea,fermata);
+                        ALTappaNext.add(hmTappa);
+                    }
+                } else {
+                    Log.e("Bus location", e.getMessage());
+                }
+            }
+        });
+
+
+
+    }
+
+
+
+
+
 }
