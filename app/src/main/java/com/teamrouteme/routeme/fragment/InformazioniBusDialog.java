@@ -60,7 +60,7 @@ public class InformazioniBusDialog extends DialogFragment {
 
         linee = (ListView)view.findViewById(R.id.listView_linee);
 
-        ParseQuery<ParseObject> query = ParseQuery.getQuery("info_linea");
+        ParseQuery<ParseObject> query = ParseQuery.getQuery("info_linea_nuovo");
         query.whereContains("fermata", fermata);
 
         final ProgressDialog dialog = ProgressDialog.show(getActivity(), "",

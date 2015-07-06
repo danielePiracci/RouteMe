@@ -48,7 +48,7 @@ public class OrariBusDialog extends DialogFragment {
         linea = b.getString("linea");
         fermata = b.getString("fermata");
 
-        ParseQuery query = ParseQuery.getQuery("info_linea");
+        ParseQuery query = ParseQuery.getQuery("info_linea_nuovo");
         query = query.whereContains("fermata", fermata);
         query.whereContains("linea_bus", linea);
 

@@ -3,19 +3,13 @@ package com.teamrouteme.routeme.fragment;
 import android.app.Dialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.app.ProgressDialog;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.LevelListDrawable;
+
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.InflateException;
@@ -23,6 +17,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -41,11 +36,10 @@ import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
-import com.parse.ParseUser;
 import com.teamrouteme.routeme.R;
+import com.teamrouteme.routeme.bean.FermataBus;
 import com.teamrouteme.routeme.bean.Itinerario;
 import com.teamrouteme.routeme.bean.Tappa;
-import com.teamrouteme.routeme.utility.CustomInfoView;
 import com.teamrouteme.routeme.utility.DirectionsJSONParser;
 
 import org.json.JSONObject;
@@ -58,6 +52,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import it.neokree.materialnavigationdrawer.MaterialNavigationDrawer;
@@ -79,8 +74,19 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
     private boolean itinerariScaricati = false;
     private ArrayList<Marker> markersBus = new ArrayList<Marker>();
     private ArrayList<Marker> markersTappe = new ArrayList<Marker>();
-    private ArrayList<HashMap<String,String>> ALTappaCurrent;
-    private ArrayList<HashMap<String,String>> ALTappaNext;
+    private HashSet<FermataBus> hsFBcurrent;
+    private HashSet<FermataBus> hsFBnext;
+    private ArrayList<String> ALlineainComune;
+    private boolean flagAndata = false;
+    private String tmpOrarioCurrent="";
+    private String tmpOrarioNext="";
+    private int durata, cntFor, cntLista;
+    private String currentFermata ="";
+    private String nextFermata ="";
+    // private InformazioniNextTappaDialog informazioniNextTappaDialog;
+    private Bundle b;
+    private boolean flagStop = false;
+
 
     public VisualizzaItinerarioFragment(){
         // Required empty public constructor
@@ -146,7 +152,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
 
                 if(itinerariScaricati){
                     Fragment anteprimaItinerariScaricatiFragment = new AnteprimaItinerariAcquistatiFragment();
-                    Bundle b = new Bundle();
+                    b = new Bundle();
                     b.putParcelable("itinerario", itinerario);
                     anteprimaItinerariScaricatiFragment.setArguments(b);
                     // Set new fragment on screen
@@ -155,7 +161,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
                 }
                 else {
                     Fragment anteprimaMieiItinerariFragment = new AnteprimaMieiItinerariFragment();
-                    Bundle b = new Bundle();
+                    b = new Bundle();
                     b.putParcelable("itinerario", itinerario);
                     anteprimaMieiItinerariFragment.setArguments(b);
                     // Set new fragment on screen
@@ -179,10 +185,10 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         if(tappe.size()==index){
 
         } else {
-            ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea");
+            ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea_nuovo");
 
             ParseGeoPoint tappaLocation = tappe.get(index).getCoordinate();
-            info_linea.whereWithinKilometers("geo_point", tappaLocation, 0.5);
+            info_linea.whereWithinKilometers("geo_point", tappaLocation, 1);
 
             info_linea.findInBackground(new FindCallback<ParseObject>() {
                 public void done(List<ParseObject> objects, ParseException e) {
@@ -217,11 +223,13 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
                                 for (int i = 0; i < markersTappe.size(); i++) {
                                     Marker marker = markersTappe.get(i);
                                     if (Math.abs(marker.getPosition().latitude - latLng.latitude) < 0.0009 && Math.abs(marker.getPosition().longitude - latLng.longitude) < 0.0009) {
-                                        if(i!=markersTappe.size()) {
+
+                                        if(i+1<markersTappe.size()) {
                                             showInformazioniTappeBusDialog(markersTappe.get(i), markersTappe.get(i + 1));
                                             Log.d(TAG, "Trovato marker tappa " + marker.getTitle());
                                             break;
                                         }
+                                        Toast.makeText(getActivity().getBaseContext(), "Questa è l'ultima tappa", Toast.LENGTH_SHORT).show();
                                     }
                                 }
 
@@ -354,6 +362,8 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         // Setting the title for the marker
         markerOptions.title(name);
 
+
+
         // Setting the snippet for the marker
         markerOptions.snippet(description);
 
@@ -398,6 +408,8 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         downloadTask.execute(url);
     }
 
+
+
     //Date due posizioni come parametro, origin e dest, crea l'url per tracciare il percorso tra i 2, a piedi
     private String getDirectionsUrl(LatLng origin,LatLng dest){
 
@@ -424,6 +436,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
 
         return url;
     }
+
 
     /** A class to download data from Google Directions URL */
     private class DownloadTaskDirections extends AsyncTask<String, Void, String> {
@@ -505,9 +518,31 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
                 }
 
                 // Adding all the points in the route to LineOptions
+
+                int [] colors = new int[8];
+
+                //Initialize the values of the array
+                colors[0] = Color.RED;
+                colors[1] = Color.BLUE;
+                colors[2] = Color.YELLOW;
+                colors[3] = Color.GRAY;
+                colors[4] = Color.MAGENTA;
+                colors[5] = Color.GREEN;
+                colors[6] = Color.CYAN;
+                colors[7] = Color.BLACK;
+
+                int cnt = 0;
+                for(LatLng l : points){
+                    lineOptions.add(l);
+                    lineOptions.width(8);
+                    lineOptions.color(colors[cnt%7]);
+                    cnt++;
+                }
+/*
                 lineOptions.addAll(points);
                 lineOptions.width(8);
-                lineOptions.color(Color.BLUE);
+                lineOptions.color(Color.BLUE);*/
+
             }
 
             // Drawing polyline in the Google Map for the i-th route
@@ -557,7 +592,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
     private void showInformazioniBusDialog(int markerPosition, String titleBus){
         FragmentManager fm = getFragmentManager();
         final InformazioniBusDialog informazioniBusDialog = new InformazioniBusDialog();
-        Bundle b = new Bundle();
+        b = new Bundle();
         b.putInt("markerPosition", markerPosition);
         b.putString("fermata", titleBus);
         informazioniBusDialog.setArguments(b);
@@ -565,54 +600,163 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         informazioniBusDialog.setTargetFragment(this, 3);
     }
 
-    private void showInformazioniTappeBusDialog(Marker currentMarker, Marker nextMarker){
 
-        ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea");
+
+    //*********************************************************************************************************************
+
+
+    private void showInformazioniTappeBusDialog(final Marker currentMarker, final Marker nextMarker){
+        b = new Bundle();
+        ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea_nuovo");
+
         //fermate intorno a currentMarker
         ParseGeoPoint currentGeoPoint = new ParseGeoPoint();
         currentGeoPoint.setLatitude(currentMarker.getPosition().latitude);
         currentGeoPoint.setLongitude(currentMarker.getPosition().longitude);
         info_linea.whereWithinKilometers("geo_point", currentGeoPoint, 1);
-        info_linea.findInBackground(new FindCallback<ParseObject>() {
-            public void done(List<ParseObject> objects, ParseException e) {
-                ALTappaCurrent = new ArrayList<HashMap<String, String>>();
-                if (e == null) {
-                    for (ParseObject parseObject : objects) {
-                        String linea = parseObject.getString("linea_bus");
-                        String fermata = parseObject.getString("fermata");
-                        HashMap<String,String> hmTappa = new HashMap<String, String>();
-                        hmTappa.put(linea,fermata);
-                        ALTappaCurrent.add(hmTappa);
+
+        try {
+            List<ParseObject> objects = info_linea.find();
+            hsFBcurrent = new HashSet<FermataBus>();
+            for (ParseObject parseObject : objects) {
+                String linea = parseObject.getString("linea_bus");
+                String fermata = parseObject.getString("fermata");
+                FermataBus fb = new FermataBus(linea, fermata);
+                hsFBcurrent.add(fb);
+            }
+            hsFBcurrent = controllaDuplicati(hsFBcurrent);
+
+            //fermate intorno a nextMarker
+            ParseQuery<ParseObject> info_linea2 = ParseQuery.getQuery("info_linea_nuovo");
+            ParseGeoPoint nextGeoPoint = new ParseGeoPoint();
+            nextGeoPoint.setLatitude(nextMarker.getPosition().latitude);
+            nextGeoPoint.setLongitude(nextMarker.getPosition().longitude);
+            info_linea2.whereWithinKilometers("geo_point", nextGeoPoint, 1);
+            info_linea2.whereEqualTo("a_r", "andata");
+
+            List<ParseObject> objects2 = info_linea2.find();
+            hsFBnext = new HashSet<FermataBus>();
+            for (ParseObject parseObject : objects2) {
+                String linea = parseObject.getString("linea_bus");
+                String fermata = parseObject.getString("fermata");
+                FermataBus fb = new FermataBus(linea, fermata);
+                hsFBnext.add(fb);
+            }
+            hsFBnext = controllaDuplicati(hsFBnext);
+            ALlineainComune = new ArrayList<String>();
+
+            for (FermataBus f1 : hsFBcurrent) {
+                for (FermataBus f2 : hsFBnext) {
+                    if (f2.getLinea().equals(f1.getLinea()) && !(f1.getFermata().equals(f2.getFermata()))) {
+
+                        currentFermata = f1.getFermata();
+                        nextFermata = f2.getFermata();
+                        String lineaComune = f1.getLinea();
+
+                        //calcola durata e riempie la dialog successiva
+
+
+                        //query per capire se e' la corsa di andata o ritorno
+                        ParseQuery query = ParseQuery.getQuery("trasporti");
+                        query.whereContains("linea", lineaComune);
+                        List<ParseObject> objects3 = query.find();
+                        for (ParseObject object : objects3) {
+                            String sequenzaFermateAndata = (String) object.get("fermateAndata");
+                            String fermateAndata[] = sequenzaFermateAndata.split(" ,");
+                            for (String fermata : fermateAndata) {
+                                if ((fermata.equals(currentFermata) && flagAndata == false))
+                                    flagAndata = true;
+                            }
+                        }
+
+
+                        //query per trovare gli orari della fermata corrente
+                        ParseQuery queryOrari = ParseQuery.getQuery("info_linea_nuovo");
+                        if (flagAndata)
+                            queryOrari.whereContains("a_r", "andata");
+                        else
+                            queryOrari.whereContains("a_r", "ritorno");
+
+                        queryOrari = queryOrari.whereContains("fermata", currentFermata);
+                        List<ParseObject> objects4 = queryOrari.find();
+                        for (ParseObject object : objects4) {
+                            tmpOrarioCurrent = (String) object.get("orari");
+                        }
+
+                        //query per trovare gli orari della fermata next
+                        ParseQuery queryOrari2 = ParseQuery.getQuery("info_linea_nuovo");
+                        if (flagAndata)
+                            queryOrari2.whereContains("a_r", "andata");
+                        else
+                            queryOrari2.whereContains("a_r", "ritorno");
+
+                        queryOrari2 = queryOrari2.whereContains("fermata", nextFermata);
+                        List<ParseObject> objects5 = queryOrari2.find();
+
+                        for (ParseObject object : objects5) {
+                            tmpOrarioNext = (String) object.get("orari");
+                        }
+
+                        //calcolo effettivo della durata
+                        String tmp[] = tmpOrarioCurrent.split(" ");
+                        String tmpPrimoOrariCurrent = tmp[0];
+
+                        tmp = tmpOrarioNext.split(" ");
+                        String tmpPrimoOrarioNext = tmp[0];
+
+                        tmp = tmpPrimoOrariCurrent.split("\\.");
+                        int oraCurrent = Integer.parseInt(tmp[0]);
+                        int minutiCurrent = Integer.parseInt(tmp[1]);
+
+
+                        tmp = tmpPrimoOrarioNext.split("\\.");
+                        int oraNext = Integer.parseInt(tmp[0]);
+                        int minutiNext = Integer.parseInt(tmp[1]);
+
+                        int diffOra = Math.abs(oraNext - oraCurrent);
+
+                        if (diffOra != 0) {
+                            diffOra = diffOra * 60;
+                        }
+                        int diffMinuti = Math.abs(minutiNext - minutiCurrent);
+                        durata = diffOra + diffMinuti;
+                        String tmpString = lineaComune + ": Da " + currentFermata + " A " + nextFermata + " Durata " + durata + " minuti";
+                        ALlineainComune.add(tmpString);
+
+
+
+                        Log.e("FermataA", currentFermata + "");
+                        Log.e("FermataR", nextFermata + "");
+
                     }
-                } else {
-                    Log.e("Bus location", e.getMessage());
                 }
             }
-        });
+
+            FragmentManager fm = getFragmentManager();
+            InformazioniNextTappaDialog informazioniNextTappaDialog = new InformazioniNextTappaDialog();
+            b.putString("nextTappa", nextMarker.getTitle());
+            b.putStringArrayList("ALF",ALlineainComune);
+            informazioniNextTappaDialog.setArguments(b);
+            informazioniNextTappaDialog.show(fm, "fragment_informazioni_next_tappa_dialog");
 
 
-        //fermate intorno a nextMarker
-        ParseGeoPoint nextGeoPoint = new ParseGeoPoint();
-        nextGeoPoint.setLatitude(nextMarker.getPosition().latitude);
-        nextGeoPoint.setLongitude(nextMarker.getPosition().longitude);
-        info_linea.whereWithinKilometers("geo_point", currentGeoPoint, 1);
-        info_linea.findInBackground(new FindCallback<ParseObject>() {
-            public void done(List<ParseObject> objects, ParseException e) {
-                ALTappaNext = new ArrayList<HashMap<String, String>>();
-                if (e == null) {
-                    for (ParseObject parseObject : objects) {
-                        String linea = parseObject.getString("linea_bus");
-                        String fermata = parseObject.getString("fermata");
-                        HashMap<String,String> hmTappa = new HashMap<String, String>();
-                        hmTappa.put(linea,fermata);
-                        ALTappaNext.add(hmTappa);
-                    }
-                } else {
-                    Log.e("Bus location", e.getMessage());
-                }
-            }
-        });
 
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+
+/*
+                                FragmentManager fm = getFragmentManager();
+                                InformazioniNextTappaDialog informazioniNextTappaDialog = new InformazioniNextTappaDialog();
+
+                                Bundle b = new Bundle();
+                                b.putStringArrayList("ALF", ALlineainComune);
+                                b.putString("nextTappa", nextMarker.getTitle());
+                                informazioniNextTappaDialog.setArguments(b);
+                                informazioniNextTappaDialog.show(fm, "fragment_informazioni_next_tappa_dialog");
+
+*/
 
 
     }
@@ -620,5 +764,352 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
 
 
 
+
+    private void showInformazioniTappeBusDialog2(final Marker currentMarker, final Marker nextMarker){
+        b = new Bundle();
+        ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea_nuovo");
+
+        //fermate intorno a currentMarker
+        ParseGeoPoint currentGeoPoint = new ParseGeoPoint();
+        currentGeoPoint.setLatitude(currentMarker.getPosition().latitude);
+        currentGeoPoint.setLongitude(currentMarker.getPosition().longitude);
+        info_linea.whereWithinKilometers("geo_point", currentGeoPoint, 1);
+        info_linea.findInBackground(new FindCallback<ParseObject>() {
+            public void done(List<ParseObject> objects, ParseException e) {
+                if (e == null) {
+                    hsFBcurrent = new HashSet<FermataBus>();
+                    for (ParseObject parseObject : objects) {
+                        String linea = parseObject.getString("linea_bus");
+                        String fermata = parseObject.getString("fermata");
+                        FermataBus fb = new FermataBus(linea, fermata);
+                        hsFBcurrent.add(fb);
+                    }
+
+                    hsFBcurrent = controllaDuplicati(hsFBcurrent);
+
+
+
+                    //fermate intorno a nextMarker
+                    ParseQuery<ParseObject> info_linea = ParseQuery.getQuery("info_linea_nuovo");
+                    ParseGeoPoint nextGeoPoint = new ParseGeoPoint();
+                    nextGeoPoint.setLatitude(nextMarker.getPosition().latitude);
+                    nextGeoPoint.setLongitude(nextMarker.getPosition().longitude);
+                    info_linea.whereWithinKilometers("geo_point", nextGeoPoint, 1);
+                    info_linea.whereEqualTo("a_r", "andata");
+                    info_linea.findInBackground(new FindCallback<ParseObject>() {
+                        public void done(List<ParseObject> objects, ParseException e) {
+
+                            hsFBnext = new HashSet<FermataBus>();
+                            if (e == null) {
+
+                                for (ParseObject parseObject : objects) {
+                                    String linea = parseObject.getString("linea_bus");
+                                    String fermata = parseObject.getString("fermata");
+                                    FermataBus fb = new FermataBus(linea, fermata);
+                                    hsFBnext.add(fb);
+                                }
+
+                                hsFBnext = controllaDuplicati(hsFBnext);
+
+                                ALlineainComune = new ArrayList<String>();
+                                cntFor =0;
+                                cntLista =0;
+                                for (FermataBus f1 : hsFBcurrent) {
+                                    for (FermataBus f2 : hsFBnext) {
+                                        if (f2.getLinea().equals(f1.getLinea()) && !(f1.getFermata().equals(f2.getFermata()))) {
+                                            cntLista++;
+
+                                            currentFermata = f1.getFermata();
+                                            nextFermata = f2.getFermata();
+                                            String lineaComune = f1.getLinea();
+
+                                            //calcola durata e riempie la dialog successiva
+
+                                            //query per capire se e' la corsa di andata o ritorno
+                                            ParseQuery query = ParseQuery.getQuery("trasporti");
+                                            query.whereContains("linea", lineaComune);
+                                            query.findInBackground(new FindCallback<ParseObject>() {
+                                                public void done(List<ParseObject> objects, ParseException e) {
+                                                    if (e == null) {
+                                                        for (ParseObject object : objects) {
+                                                            String sequenzaFermateAndata = (String) object.get("fermateAndata");
+                                                            String fermateAndata[] = sequenzaFermateAndata.split(" ,");
+                                                            for (String fermata : fermateAndata) {
+                                                                if ((fermata.equals(currentFermata) && flagAndata == false))
+                                                                    flagAndata = true;
+                                                            }
+
+                                                        }
+
+
+                                                        //query per trovare gli orari della fermata corrente
+                                                        ParseQuery queryOrari = ParseQuery.getQuery("info_linea_nuovo");
+                                                        if (flagAndata)
+                                                            queryOrari.whereContains("a_r", "andata");
+                                                        else
+                                                            queryOrari.whereContains("a_r", "ritorno");
+
+                                                        queryOrari = queryOrari.whereContains("fermata", currentFermata);
+                                                        queryOrari.findInBackground(new FindCallback<ParseObject>() {
+                                                            public void done(List<ParseObject> objects, ParseException e) {
+                                                                if (e == null) {
+                                                                    for (ParseObject object : objects) {
+                                                                        tmpOrarioCurrent = (String) object.get("orari");
+                                                                    }
+
+                                                                    //query per trovare gli orari della fermata next
+                                                                    ParseQuery queryOrari = ParseQuery.getQuery("info_linea_nuovo");
+                                                                    if (flagAndata)
+                                                                        queryOrari.whereContains("a_r", "andata");
+                                                                    else
+                                                                        queryOrari.whereContains("a_r", "ritorno");
+
+                                                                    queryOrari = queryOrari.whereContains("fermata", nextFermata);
+                                                                    queryOrari.findInBackground(new FindCallback<ParseObject>() {
+                                                                        public void done(List<ParseObject> objects, ParseException e) {
+                                                                            if (e == null) {
+                                                                                for (ParseObject object : objects) {
+                                                                                    tmpOrarioNext = (String) object.get("orari");
+                                                                                }
+
+
+                                                                                //calcolo effettivo della durata
+                                                                                String tmp[] = tmpOrarioCurrent.split(" ");
+                                                                                String tmpPrimoOrariCurrent = tmp[0];
+
+                                                                                tmp = tmpOrarioNext.split(" ");
+                                                                                String tmpPrimoOrarioNext = tmp[0];
+
+                                                                                tmp = tmpPrimoOrariCurrent.split("\\.");
+                                                                                int oraCurrent = Integer.parseInt(tmp[0]);
+                                                                                int minutiCurrent = Integer.parseInt(tmp[1]);
+
+
+                                                                                tmp = tmpPrimoOrarioNext.split("\\.");
+                                                                                int oraNext = Integer.parseInt(tmp[0]);
+                                                                                int minutiNext = Integer.parseInt(tmp[1]);
+
+                                                                                int diffOra = Math.abs(oraNext - oraCurrent);
+
+                                                                                if (diffOra != 0) {
+                                                                                    diffOra = diffOra * 60;
+                                                                                }
+                                                                                int diffMinuti = Math.abs(minutiNext - minutiCurrent);
+                                                                                durata = diffOra + diffMinuti;
+                                                                                //String tmpString = lineaComune + ": Da " + currentFermata + " A " + nextFermata + " Durata " + durata + " minuti";
+                                                                                String tmpString = "Linea TOT" + ": Da " + "Fermata A" + " A " + "Fermata B" + " Durata " + durata + " minuti";
+                                                                                //ALlineainComune.add(tmpString);
+
+                                                                                b.putString("Item"+cntLista, tmpString);
+
+
+                                                                                Log.e("FermataA", currentFermata + "");
+                                                                                Log.e("FermataR", nextFermata + "");
+
+                                                                                if(cntFor == hsFBcurrent.size())
+                                                                                    flagStop=true;
+/*
+                                                                                View vv = informazioniNextTappaDialog.getView();
+                                                                                TextView tv = (TextView) vv.findViewById(R.id.titoloInfo);
+                                                                                tv.setText("AAAAAAAAAAAAAAAAAAAAAAAA");
+                                                                                */
+
+
+
+
+                                                                                b.putString("nextTappa", nextMarker.getTitle());
+
+
+                                                                            } else {
+                                                                                Log.e("Calcolo durata", e.getMessage());
+                                                                            }
+                                                                        }
+                                                                    });
+
+                                                                } else {
+                                                                    Log.e("Calcolo durata", e.getMessage());
+                                                                }
+                                                            }
+                                                        });
+
+
+                                                    } else {
+                                                        Log.e("Calcolo durata", e.getMessage());
+                                                    }
+                                                }
+                                            });
+
+
+                                        }
+                                    }
+
+
+                                    cntFor++;
+                                }
+
+                                FragmentManager fm = getFragmentManager();
+                                InformazioniNextTappaDialog informazioniNextTappaDialog = new InformazioniNextTappaDialog();
+                                b.putString("nextTappa", nextMarker.getTitle());
+                                informazioniNextTappaDialog.setArguments(b);
+                                informazioniNextTappaDialog.show(fm, "fragment_informazioni_next_tappa_dialog");
+
+/*
+                                FragmentManager fm = getFragmentManager();
+                                InformazioniNextTappaDialog informazioniNextTappaDialog = new InformazioniNextTappaDialog();
+
+                                Bundle b = new Bundle();
+                                b.putStringArrayList("ALF", ALlineainComune);
+                                b.putString("nextTappa", nextMarker.getTitle());
+                                informazioniNextTappaDialog.setArguments(b);
+                                informazioniNextTappaDialog.show(fm, "fragment_informazioni_next_tappa_dialog");
+
+*/
+
+
+
+                            } else {
+                                Log.e("Bus location", e.getMessage());
+                            }
+                        }
+                    });
+
+
+                } else {
+                    Log.e("Bus location", e.getMessage());
+                }
+            }
+        });
+
+    }
+
+    private HashSet<FermataBus> controllaDuplicati(HashSet<FermataBus> hsFB) {
+        HashSet<FermataBus> hsTmp = new HashSet<FermataBus>();
+        for(FermataBus fb1 : hsFB){
+            if(hsTmp.size()==0)
+                hsTmp.add(fb1);
+            else {
+                for (FermataBus fb2 : hsTmp) {
+                    if (!(fb1.getLinea().equals(fb2.getLinea())))
+                        if (!(fb1.getFermata().equals(fb2.getFermata())))
+                            hsTmp.add(fb1);
+                }
+            }
+        }
+        return hsTmp;
+    }
+/*
+    private int calcolaTempo(String tmpOrariCurrent, String tmpOrariNext) {
+        String tmp [] = tmpOrariCurrent.split("\\.");
+        int oraCurrent = Integer.parseInt(tmp[0]);
+        int minutiCurrent = Integer.parseInt(tmp[1]);
+
+        tmp = tmpOrariNext.split("\\.");
+        int oraNext = Integer.parseInt(tmp[0]);
+        int minutiNext = Integer.parseInt(tmp[1]);
+
+        int diffOra = Math.abs(oraNext - oraCurrent);
+
+        if(diffOra != 0){
+            diffOra = diffOra*60;
+        }
+        int diffMinuti = Math.abs(minutiNext - minutiCurrent);
+        int durata = diffOra+diffMinuti;
+
+        return durata;
+    }*/
+/*
+    private int calcolaTempo(final String currentFermata, final String nextFermata, String linea) {
+
+        //query per capire se e' la corsa di andata o ritorno
+        ParseQuery query = ParseQuery.getQuery("trasporti");
+        query.whereContains("linea", linea);
+        query.findInBackground(new FindCallback<ParseObject>() {
+            public void done(List<ParseObject> objects, ParseException e) {
+                if (e == null) {
+                    for (ParseObject object : objects) {
+                        String sequenzaFermateAndata = (String) object.get("fermateAndata");
+                        String fermateAndata[] = sequenzaFermateAndata.split(" ,");
+                        for (String fermata : fermateAndata) {
+                            if ((fermata.equals(currentFermata) && flagAndata == false))
+                                flagAndata = true;
+                        }
+
+                    }
+
+
+                    //query per trovare gli orari della fermata corrente
+                    ParseQuery queryOrari = ParseQuery.getQuery("info_linea_nuovo");
+                    if (flagAndata)
+                        queryOrari.whereContains("a_r", "andata");
+                    else
+                        queryOrari.whereContains("a_r", "ritorno");
+
+                    queryOrari = queryOrari.whereContains("fermata",currentFermata);
+                    queryOrari.findInBackground(new FindCallback<ParseObject>() {
+                        public void done(List<ParseObject> objects, ParseException e) {
+                            if (e == null) {
+                                for (ParseObject object : objects) {
+                                    tmpOrarioCurrent = (String)object.get("orari");
+                                }
+
+                                //query per trovare gli orari della fermata next
+                                ParseQuery queryOrari = ParseQuery.getQuery("info_linea_nuovo");
+                                if (flagAndata)
+                                    queryOrari.whereContains("a_r", "andata");
+                                else
+                                    queryOrari.whereContains("a_r", "ritorno");
+
+                                queryOrari = queryOrari.whereContains("fermata",nextFermata);
+                                queryOrari.findInBackground(new FindCallback<ParseObject>() {
+                                    public void done(List<ParseObject> objects, ParseException e) {
+                                        if (e == null) {
+                                            for (ParseObject object : objects) {
+                                                tmpOrarioNext = (String)object.get("orari");
+                                            }
+
+
+                                            //calcolo effettivo della durata
+                                            String tmp[] = tmpOrarioCurrent.split(" ");
+                                            String tmpPrimoOrariCurrent = tmp[0];
+
+                                            tmp = tmpOrarioNext.split(" ");
+                                            String tmpPrimoOrarioNext = tmp[0];
+
+                                            tmp= tmpPrimoOrariCurrent.split("\\.");
+                                            int oraCurrent = Integer.parseInt(tmp[0]);
+                                            int minutiCurrent = Integer.parseInt(tmp[1]);
+
+
+                                            tmp = tmpPrimoOrarioNext.split("\\.");
+                                            int oraNext = Integer.parseInt(tmp[0]);
+                                            int minutiNext = Integer.parseInt(tmp[1]);
+
+                                            int diffOra = Math.abs(oraNext - oraCurrent);
+
+                                            if(diffOra != 0){
+                                                diffOra = diffOra*60;
+                                            }
+                                            int diffMinuti = Math.abs(minutiNext - minutiCurrent);
+                                            durata = diffOra+diffMinuti;
+                                        }
+                                        else {
+                                            Log.e("Calcolo durata", e.getMessage());
+                                        }
+                                    }
+                                });
+                            }
+                            else {
+                                Log.e("Calcolo durata", e.getMessage());
+                            }
+                        }
+                    });
+                } else {
+                    Log.e("Calcolo durata", e.getMessage());
+                }
+            }
+        });
+        return durata;
+    }
+*/
 
 }
