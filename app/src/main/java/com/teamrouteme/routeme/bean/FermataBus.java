@@ -10,15 +10,24 @@ import android.util.Log;
 public class FermataBus implements Parcelable{
     private String linea;
     private String fermata;
+    private String tipo;
 
 
-    public FermataBus(String linea, String fermata) {
+    public FermataBus(String linea, String fermata, String tipo) {
 
         this.linea = linea;
         this.fermata = fermata;
+        this.tipo = tipo;
 
     }
 
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
 
 
     public String getLinea() {

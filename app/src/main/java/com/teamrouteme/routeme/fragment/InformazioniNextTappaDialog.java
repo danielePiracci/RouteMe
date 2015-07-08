@@ -43,46 +43,23 @@ public class InformazioniNextTappaDialog extends DialogFragment {
         nomeTappa = b.getString("nextTappa");
         ALF = b.getStringArrayList("ALF");
 
-        //cntLista = b.getInt("cntLista");
-
-       // ArrayList<String> AL = new ArrayList<>();
-/*
-        for(int i=0;i<cntLista;i++){
-            String tmp = b.getString("Item"+cntLista);
-            AL.add(tmp);
-        }
-
-*/
-
-        //ALF = b.getStringArrayList("ALF");
-
-
 
         ListView lv = (ListView) view.findViewById(R.id.listView_infoLinea);
 
         TextView tv = (TextView) view.findViewById(R.id.titoloInfo);
         tv.setText("Prossima Tappa: "+ nomeTappa);
 
-        //   ArrayList<String> AL = new ArrayList<>();
-/*
-        if(ALF.size()==0)
-            AL.add("Nessuna fermata disponibile per raggiungere la prossima tappa");
-        else {
-            for (String f : ALF) {
-                AL.add(f);
-            }
-            Set<String> hs = new HashSet<>();
-            hs.addAll(AL);
-            AL.clear();
-            AL.addAll(hs);
-        }*/
 
 
         if(ALF.size()==0)
             ALF.add("Nessuna fermata disponibile per raggiungere la prossima tappa");
+        else{
+            Set<String> ALFnoDuplicate = new HashSet<String>(ALF);
+            ALF = new ArrayList<String>(ALFnoDuplicate);
+        }
 
 
-        ALF.add("Nessuna fermata disponibile per raggiungere la prossima tappa");
+
 
         adapter = new ArrayAdapter<String>(getActivity(),android.R.layout.simple_expandable_list_item_1,ALF);
         lv.setAdapter(adapter);
