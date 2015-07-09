@@ -216,32 +216,68 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
 
                             @Override
                             public void onMapLongClick(LatLng latLng) {
+
+                                boolean flagBus = false;
+                                int cntBus = 0;
+                                String busTitle = "";
+
                                 for (int i = 0; i < markersBus.size(); i++) {
                                     Marker marker = markersBus.get(i);
                                     if (Math.abs(marker.getPosition().latitude - latLng.latitude) < 0.0009 && Math.abs(marker.getPosition().longitude - latLng.longitude) < 0.0009) {
+                                        flagBus = true;
+                                        cntBus = i;
+                                        busTitle = marker.getTitle();
+                                        /*
                                         showInformazioniBusDialog(i, marker.getTitle());
                                         Log.d(TAG, "Trovato marker tappa " + marker.getTitle());
+                                        */
                                         break;
                                     }
                                 }
 
 
                                 //long press per le fermate vicine
+
+                                boolean flagTappa = false;
+                                int cntTappa = 0;
+                                String tappaTitle ="";
+
                                 for (int i = 0; i < markersTappe.size(); i++) {
                                     Marker marker = markersTappe.get(i);
                                     if (Math.abs(marker.getPosition().latitude - latLng.latitude) < 0.0009 && Math.abs(marker.getPosition().longitude - latLng.longitude) < 0.0009) {
-
                                         if(i+1<markersTappe.size()) {
+                                            /*
                                             dialogProgress = ProgressDialog.show(getActivity(), "","Caricamento in corso...", true);
-
                                             new OrariTask().execute(markersTappe.get(i).getPosition().latitude, markersTappe.get(i).getPosition().longitude, markersTappe.get(i+1).getPosition().latitude, markersTappe.get(i+1).getPosition().longitude, markersTappe.get(i).getTitle());
-                                            //showInformazioniTappeBusDialog(markersTappe.get(i), markersTappe.get(i + 1));
                                             Log.d(TAG, "Trovato marker tappa " + marker.getTitle());
+                                            */
+                                            flagTappa = true;
+                                            cntTappa = i;
+                                            tappaTitle = markersTappe.get(i+1).getTitle();
                                             break;
                                         }
                                         Toast.makeText(getActivity().getBaseContext(), "Questa è l'ultima tappa", Toast.LENGTH_SHORT).show();
                                     }
                                 }
+
+                                if(flagBus && flagTappa == false){
+                                    showInformazioniBusDialog(cntBus, busTitle);
+                                    Log.d(TAG, "Trovato marker tappa " + busTitle);
+                                }
+
+                                if (flagTappa && flagBus == false){
+                                    dialogProgress = ProgressDialog.show(getActivity(), "","Caricamento in corso...", true);
+                                    new OrariTask().execute(markersTappe.get(cntTappa).getPosition().latitude, markersTappe.get(cntTappa).getPosition().longitude, markersTappe.get(cntTappa + 1).getPosition().latitude, markersTappe.get(cntTappa + 1).getPosition().longitude, tappaTitle);
+                                    Log.d(TAG, "Trovato marker tappa " + tappaTitle);
+                                }
+
+                                if(flagBus && flagTappa){
+                                    dialogProgress = ProgressDialog.show(getActivity(), "","Caricamento in corso...", true);
+                                    new OrariTask().execute(markersTappe.get(cntTappa).getPosition().latitude, markersTappe.get(cntTappa).getPosition().longitude, markersTappe.get(cntTappa + 1).getPosition().latitude, markersTappe.get(cntTappa + 1).getPosition().longitude, tappaTitle, new Integer(cntBus),busTitle);
+
+
+                                }
+
 
                             }
                         });
@@ -253,6 +289,8 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
             });
         }
     }
+
+
 
     // Metodo per posizionare la mappa sulla posizione attuale, se possibile, altrimenti la posiziona sull'Italia
     private void setUpMapOnLastKnownLocation(boolean locationUpdatesRequested){
@@ -954,10 +992,39 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
     }
 
 
+
+
+    private void showInformazioniEntrambiDialog(int markerPosition, String titleBus, String nextTappa, ArrayList ALF){
+
+        FragmentManager fm = getFragmentManager();
+        TabInformazioniDialog tabInformazioniDialog = new TabInformazioniDialog();
+        b = new Bundle();
+        b.putInt("markerPosition", markerPosition);
+        b.putString("fermata", titleBus);
+        b.putString("nextTappa", nextTappa);
+        b.putStringArrayList("ALF", ALF);
+
+        tabInformazioniDialog.setArguments(b);
+        tabInformazioniDialog.show(fm, "tab_informazioni_dialog");
+
+    }
+
+
     private class OrariTask extends AsyncTask<Object,Void,Object[]>{
+
+        //questi parametri sono per il bus
+        private Integer entrambe;
+        private String entrambe2;
 
         @Override
         protected Object[] doInBackground(Object... params) {
+
+            if(params.length>5){
+                entrambe = (Integer)params[5];
+                entrambe2 = (String)params[6];
+            }
+
+
             return showInformazioniTappeBusDialog((Double) params[0],(Double) params[1],(Double) params[2],(Double) params[3], (String)params[4]);
 
         }
@@ -965,13 +1032,22 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         @Override
         protected void onPostExecute(Object[] o) {
             super.onPostExecute(o);
+
             dialogProgress.dismiss();
-            FragmentManager fm = getFragmentManager();
-            InformazioniNextTappaDialog informazioniNextTappaDialog = new InformazioniNextTappaDialog();
-            b.putString("nextTappa", (String)o[0]);
-            b.putStringArrayList("ALF",(ArrayList)o[1]);
-            informazioniNextTappaDialog.setArguments(b);
-            informazioniNextTappaDialog.show(fm, "fragment_informazioni_next_tappa_dialog");
+            if(entrambe!=null){
+                showInformazioniEntrambiDialog(entrambe,entrambe2,(String)o[0],(ArrayList)o[1]);
+            } else {
+
+                FragmentManager fm = getFragmentManager();
+                InformazioniNextTappaDialog informazioniNextTappaDialog = new InformazioniNextTappaDialog();
+                b.putString("nextTappa", (String)o[0]);
+                b.putStringArrayList("ALF",(ArrayList)o[1]);
+                informazioniNextTappaDialog.setArguments(b);
+                informazioniNextTappaDialog.show(fm, "fragment_informazioni_next_tappa_dialog");
+            }
+
+
+
 
         }
 
