@@ -4,8 +4,12 @@ import android.app.Dialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.ProgressDialog;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
 
+import android.graphics.Paint;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -135,8 +139,9 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         // Disegna i marker per ogni tappa sulla mappa
         ArrayList<Tappa> tappe = itinerario.getTappe();
         for(int i=0;i<tappe.size();i++) {
-            MarkerOptions mO = createMarkerFromTappa(tappe.get(i));
+            MarkerOptions mO = createMarkerFromTappa(tappe.get(i),i+1);
             Marker m = mMap.addMarker(mO);
+
             markersTappe.add(m);
         }
 
@@ -387,7 +392,7 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
     }
 
     // Da un oggetto Tappa crea e restituisce il marker da disegnare sulla mappa
-    private MarkerOptions createMarkerFromTappa(Tappa t) {
+    private MarkerOptions createMarkerFromTappa(Tappa t, int tappaNumber) {
         MarkerOptions markerOptions = new MarkerOptions();
 
         // Getting latitude of the place
@@ -410,7 +415,31 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
         // Setting the title for the marker
         markerOptions.title(name);
 
+        //markerOptions.
 
+        /******/
+        Bitmap.Config conf = Bitmap.Config.ARGB_8888;
+        Bitmap bmp = Bitmap.createBitmap(64, 64, conf);
+        Canvas canvas1 = new Canvas(bmp);
+
+        // paint defines the text color,
+        // stroke width, size
+        Paint color = new Paint();
+        color.setTextSize(35);
+        color.setColor(Color.BLACK);
+
+        //modify canvas
+        canvas1.drawBitmap(BitmapFactory.decodeResource(getResources(),
+                R.drawable.map_marker_icon), 0, 0, color);
+
+        //aggiustare qua se si vuole centrare meglio il testo
+        canvas1.drawText(""+tappaNumber, 22, 35, color);
+
+        markerOptions.icon(BitmapDescriptorFactory.fromBitmap(bmp))
+                // Specifies the anchor to be at a particular point in the marker image.
+                .anchor(1, 0.5f);
+
+        /******/
 
         // Setting the snippet for the marker
         markerOptions.snippet(description);
@@ -580,9 +609,11 @@ public class VisualizzaItinerarioFragment extends Fragment implements LocationLi
                 colors[7] = Color.BLACK;
 
                 int cnt = 0;
+
                 for(LatLng l : points){
                     lineOptions.add(l);
                     lineOptions.width(8);
+
                     lineOptions.color(colors[cnt%7]);
                     cnt++;
                 }

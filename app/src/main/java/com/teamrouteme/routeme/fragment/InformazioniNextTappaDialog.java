@@ -44,9 +44,9 @@ public class InformazioniNextTappaDialog extends DialogFragment {
         ALF = b.getStringArrayList("ALF");
 
 
-        ListView lv = (ListView) view.findViewById(R.id.listView_infoLinea);
+        ListView lv = (ListView) view.findViewById(R.id.listView_infoLinea2);
 
-        TextView tv = (TextView) view.findViewById(R.id.titoloInfo);
+        TextView tv = (TextView) view.findViewById(R.id.titoloInfo2);
         tv.setText("Prossima Tappa: "+ nomeTappa);
 
 

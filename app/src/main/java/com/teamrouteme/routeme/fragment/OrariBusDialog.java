@@ -73,7 +73,22 @@ public class OrariBusDialog extends DialogFragment {
 
                             String a_r = parseObject.getString("a_r");
                             String s = parseObject.getString("orari");
+                            String [] tmp = s.split(" ");
+
+                            for(int i = 0;i<tmp.length;i++){
+                                if(tmp[i].equals("|"))
+                                    tmp[i] = "";
+                            }
+
+                            String s2 = "";
+                            for(String string : tmp){
+                                s2 = s2 + " " + string;
+                            }
+
+                            s = s2;
+
                             s = s.trim();
+
                             String orari = s.replace(" "," - ");
 
                             if (a_r.equals("andata")) {

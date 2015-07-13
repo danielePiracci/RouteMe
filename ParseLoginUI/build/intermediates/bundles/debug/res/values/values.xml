@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- From: file:/Users/ginofarisano/Desktop/RouteGIS/RouteMe/ParseLoginUI/res/values/colors.xml -->
+    <!-- From: file:/Users/ginofarisano/Desktop/gis/RouteMe/ParseLoginUI/res/values/colors.xml -->
     <eat-comment/>
     <color name="com_parse_ui_facebook_login_button">#3B5998</color>
     <color name="com_parse_ui_facebook_login_button_focus">#304F8B</color>
@@ -19,7 +19,7 @@
     <color name="lista">#80cbc4</color>
     <color name="sfondo">#e0f2f1</color>
     <color name="testo">#009688</color>
-    <!-- From: file:/Users/ginofarisano/Desktop/RouteGIS/RouteMe/ParseLoginUI/res/values/dimens.xml -->
+    <!-- From: file:/Users/ginofarisano/Desktop/gis/RouteMe/ParseLoginUI/res/values/dimens.xml -->
     <eat-comment/>
     <dimen name="com_parse_ui_horizontal_margin">16dp</dimen>
     <dimen name="com_parse_ui_large_vertical_spacing">24dp</dimen>
@@ -28,7 +28,7 @@
     <dimen name="com_parse_ui_vertical_margin">16dp</dimen>
     <dimen name="com_parse_ui_vertical_spacing">16dp</dimen>
     <dimen name="com_parse_ui_xlarge_vertical_spacing">36dp</dimen>
-    <!-- From: file:/Users/ginofarisano/Desktop/RouteGIS/RouteMe/ParseLoginUI/res/values/strings.xml -->
+    <!-- From: file:/Users/ginofarisano/Desktop/gis/RouteMe/ParseLoginUI/res/values/strings.xml -->
     <eat-comment/>
     <plurals name="com_parse_ui_password_too_short_toast">
         <item quantity="one">Password deve essere almeno %d caratteri</item>
@@ -84,7 +84,7 @@
     <string name="com_parse_ui_twitter_login_failed_toast">Twitter login fallito</string>
     <string name="com_parse_ui_username_input_hint">Username</string>
     <string name="com_parse_ui_username_taken_toast">Username già usato, scegline uno differente</string>
-    <!-- From: file:/Users/ginofarisano/Desktop/RouteGIS/RouteMe/ParseLoginUI/res/values/styles.xml -->
+    <!-- From: file:/Users/ginofarisano/Desktop/gis/RouteMe/ParseLoginUI/res/values/styles.xml -->
     <eat-comment/>
     <style name="ParseLoginUI"/>
     <style name="ParseLoginUI.Button" parent="@android:style/Widget.Button">

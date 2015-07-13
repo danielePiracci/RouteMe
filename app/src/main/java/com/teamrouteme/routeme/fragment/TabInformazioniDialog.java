@@ -3,6 +3,7 @@ package com.teamrouteme.routeme.fragment;
 import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.app.ProgressDialog;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -76,22 +77,28 @@ public class TabInformazioniDialog extends DialogFragment {
         TabHost.TabSpec tabpage1 = tabs.newTabSpec("one");
         tabpage1.setContent(R.id.shareIndividual);
         LinearLayout ll = (LinearLayout) view.findViewById(R.id.shareIndividual);
-        tabpage1.setIndicator("Tab 1", getResources().getDrawable(R.drawable.ic_launcher));
+        tabpage1.setIndicator("Orari bus", getResources().getDrawable(R.drawable.ic_launcher));
         tabs.addTab(tabpage1);
 
 
         TabHost.TabSpec tabpage2 = tabs.newTabSpec("due");
         tabpage2.setContent(R.id.shareGroup);
         LinearLayout ll2 = (LinearLayout) view.findViewById(R.id.shareGroup);
-        tabpage2.setIndicator("Tab 2", getResources().getDrawable(R.drawable.ic_launcher));
+        tabpage2.setIndicator("Per la prossima tappa", getResources().getDrawable(R.drawable.ic_launcher));
         tabs.addTab(tabpage2);
+
+        for(int i=0;i<tabs.getTabWidget().getChildCount();i++)
+        {
+            TextView tv = (TextView) tabs.getTabWidget().getChildAt(i).findViewById(android.R.id.title);
+            tv.setTextColor(getResources().getColor(R.color.testo));
+        }
 
         return view;
 
     }
 
     private void mostraInfoProssimaTappa(int markerPosition, String fermata) {
-        ListView lv = (ListView) view.findViewById(R.id.listView_infoLinea);
+        ListView lv = (ListView) view.findViewById(R.id.listView_info);
 
         TextView tv = (TextView) view.findViewById(R.id.titoloInfo);
         tv.setText("Prossima Tappa: "+ nomeTappa);
